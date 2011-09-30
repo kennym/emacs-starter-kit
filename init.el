@@ -76,4 +76,9 @@
   (mapc #'load (directory-files user-specific-dir nil ".*el$")))
 (if (file-exists-p user-specific-config) (load user-specific-config))
 
+;; Load rails minor mode
+(add-to-list 'load-path (expand-file-name "~/.emacs.d/rails-minor-mode"))
+(require 'rails)
+
 ;;; init.el ends here
+(put 'narrow-to-region 'disabled nil)

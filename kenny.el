@@ -2,6 +2,8 @@
 ;;; General settings
 ;;;
 
+(server-start)
+
 (setq x-select-enable-clipboard t)
 ;; Set C-x C-m as M-x
 (global-set-key "\C-x\C-m" 'execute-extended-command)
@@ -62,14 +64,8 @@ If the new path's directories does not exist, create them."
 ; Turn off binding of colon to eval
 (put 'eval-expression 'disabled nil)
 
-;;; emacs-solarized color-theme
-(require 'color-theme-solarized)
-
 ;; Color theme
 (require 'color-theme)
-(color-theme-initialize)
-(setq color-theme-is-global t)
-(color-theme-solarized-dark)
 
 ;;;
 ;;; Org mode
@@ -79,7 +75,7 @@ If the new path's directories does not exist, create them."
 (require 'org-install)
 (require 'org-latex)
 ;; Set org-directory
-(setq org-directory "~/docs/org/")
+(setq org-directory "~/org/")
 ;; Org-mode default for .org, .org_archive, .txt files
 (add-to-list 'auto-mode-alist '("\\.\\(org\\|org_archive\\|txt\\)$" . org-mode))
 
@@ -157,7 +153,7 @@ If the new path's directories does not exist, create them."
   ;; If you edit it by hand, you could mess it up, so be careful.
   ;; Your init file should contain only one such instance.
   ;; If there is more than one, they won't work right.
- '(erc-modules (quote (autoaway autojoin button completion fill irccontrols list match menu move-to-prompt netsplit networks noncommands notify readonly ring smiley stamp spelling track unmorse)))
+ '(erc-modules (quote (autoaway autojoin button completion fill irccontrols list match menu move-to-prompt netsplit networks noncommands notify readonly smiley stamp spelling track unmorse)))
  '(inhibit-startup-screen t))
 (custom-set-faces
   ;; custom-set-faces was added by Custom.
@@ -167,7 +163,7 @@ If the new path's directories does not exist, create them."
  )
 
 ;; Org-mode Diary
-(defvar org-journal-file "~/docs/org/diary.org"
+(defvar org-journal-file "~/org/diary.org"
   "Path to OrgMode journal file.")
 (defvar org-journal-date-format "%Y-%m-%d"
   "Date format string for journal headings.")
@@ -197,22 +193,22 @@ If the new path's directories does not exist, create them."
 (setq org-default-notes-file (concat org-directory "/refile.org"))
 (define-key global-map "\C-cr" 'org-capture)
 
-(setq org-default-notes-file "~/docs/org/refile.org")
-(setq journal-file "~/docs/org/journal.org")
+(setq org-default-notes-file "~/org/refile.org")
+(setq journal-file "~/org/journal.org")
 
 ;; Capture templates for: TODO tasks, Notes, appointments, phone calls, and org-protocol
 (setq org-capture-templates
-      (quote (("t" "todo" entry (file "~/docs/org/refile.org")
+      (quote (("t" "todo" entry (file "~/org/refile.org")
                "* TODO %?\n%U\n%a\n  %i" :clock-in t :clock-resume t)
-              ("n" "note" entry (file "~/docs/org/refile.org")
+              ("n" "note" entry (file "~/org/refile.org")
                "* %? :NOTE:\n%U\n%a\n  %i" :clock-in t :clock-resume t)
-              ("j" "Journal" entry (file+datetree "~/docs/org/diary.org")
+              ("j" "Journal" entry (file+datetree journal-file)
                "* %?\n%U\n  %i" :clock-in t :clock-resume t)
-              ("w" "org-protocol" entry (file "~/docs/org/refile.org")
+              ("w" "org-protocol" entry (file "~/org/refile.org")
                "* TODO Review %c\n%U\n  %i" :immediate-finish t)
-              ("p" "Phone call" entry (file "~/docs/org/refile.org")
+              ("p" "Phone call" entry (file "~/org/refile.org")
                "* PHONE %? :PHONE:\n%U" :clock-in t :clock-resume t)
-              ("h" "Habit" entry (file "~/docs/org/refile.org")
+              ("h" "Habit" entry (file "~/org/refile.org")
                "* NEXT %?\n%U\n%a\nSCHEDULED: %t .+1d/3d\n:PROPERTIES:\n:STYLE: habit\n:REPEAT_TO_STATE: NEXT\n:END:\n  %i"))))
 
 ;; org-refile
@@ -226,7 +222,7 @@ If the new path's directories does not exist, create them."
 ; Targets complete directly with IDO
 (setq org-outline-path-complete-in-steps nil)
 
-; Allow refile to create parent tasks with confirmation
+
 (setq org-refile-allow-creating-parent-nodes (quote confirm))
 
 ; Use IDO for both buffer and file completion and ido-everywhere to t
@@ -235,92 +231,6 @@ If the new path's directories does not exist, create them."
 (setq ido-max-directory-size 100000)
 (ido-mode (quote both))
 
-
-;; Do not dim blocked tasks
-(setq org-agenda-dim-blocked-tasks nil)
-
-;; Custom agenda command definitions
-(setq org-agenda-custom-commands
-      (quote (("N" "Notes" tags "NOTE"
-               ((org-agenda-overriding-header "Notes")
-                (org-tags-match-list-sublevels t)))
-              ("h" "Habits" tags-todo "STYLE=\"habit\""
-               ((org-agenda-overriding-header "Habits")
-                (org-agenda-sorting-strategy
-                 '(todo-state-down effort-up category-keep))))
-              (" " "Agenda"
-               ((agenda "" nil)
-                (tags "REFILE"
-                      ((org-agenda-overriding-header "Notes and Tasks to Refile")
-                       (org-agenda-overriding-header "Tasks to Refile")))
-                (tags-todo "-CANCELLED/!"
-                           ((org-agenda-overriding-header "Stuck Projects")
-                            (org-tags-match-list-sublevels 'indented)
-                            (org-agenda-skip-function 'bh/skip-non-stuck-projects)))
-                (tags-todo "-WAITING-CANCELLED/!NEXT|STARTED"
-                           ((org-agenda-overriding-header "Next Tasks")
-                            (org-agenda-skip-function 'bh/skip-projects)
-                            (org-agenda-todo-ignore-scheduled t)
-                            (org-agenda-todo-ignore-deadlines t)
-                            (org-tags-match-list-sublevels t)
-                            (org-agenda-sorting-strategy
-                             '(todo-state-down effort-up category-keep))))
-                (tags-todo "-REFILE-CANCELLED/!-NEXT-STARTED-WAITING"
-                           ((org-agenda-overriding-header "Relevant Tasks")
-                            (org-agenda-skip-function 'bh/skip-non-relevant-tasks)
-                            (org-tags-match-list-sublevels 'indented)
-                            (org-agenda-todo-ignore-scheduled t)
-                            (org-agenda-todo-ignore-deadlines t)
-                            (org-agenda-sorting-strategy
-                             '(category-keep))))
-                (tags-todo "-CANCELLED/!"
-                           ((org-agenda-overriding-header "Projects")
-                            (org-agenda-skip-function 'bh/skip-non-projects)
-                            (org-tags-match-list-sublevels 'indented)
-                            (org-agenda-todo-ignore-scheduled 'future)
-                            (org-agenda-todo-ignore-deadlines 'future)
-                            (org-agenda-sorting-strategy
-                             '(category-keep))))
-                (todo "WAITING|SOMEDAY"
-                      ((org-agenda-overriding-header "Waiting and Postponed tasks")
-                       (org-agenda-skip-function 'bh/skip-projects)))
-                (tags "-REFILE/"
-                      ((org-agenda-overriding-header "Tasks to Archive")
-                       (org-agenda-skip-function 'bh/skip-non-archivable-tasks))))
-               nil)
-              ("r" "Tasks to Refile" tags "REFILE"
-               ((org-agenda-overriding-header "Notes and Tasks to Refile")
-                (org-agenda-overriding-header "Tasks to Refile")))
-              ("#" "Stuck Projects" tags-todo "-CANCELLED/!"
-               ((org-agenda-overriding-header "Stuck Projects")
-                (org-tags-match-list-sublevels 'indented)
-                (org-agenda-skip-function 'bh/skip-non-stuck-projects)))
-              ("n" "Next Tasks" tags-todo "-WAITING-CANCELLED/!NEXT|STARTED"
-               ((org-agenda-overriding-header "Next Tasks")
-                (org-agenda-skip-function 'bh/skip-projects)
-                (org-tags-match-list-sublevels t)
-                (org-agenda-sorting-strategy
-                 '(todo-state-down effort-up category-keep))))
-              ("R" "Relevant Tasks" tags-todo "-REFILE-CANCELLED/!-NEXT-STARTED-WAITING"
-               ((org-agenda-overriding-header "Relevant Tasks")
-                (org-agenda-skip-function 'bh/skip-non-relevant-tasks)
-                (org-tags-match-list-sublevels 'indented)
-                (org-agenda-sorting-strategy
-                 '(category-keep))))
-              ("p" "Projects" tags-todo "-CANCELLED/!"
-               ((org-agenda-overriding-header "Projects")
-                (org-agenda-skip-function 'bh/skip-non-projects)
-                (org-tags-match-list-sublevels 'indented)
-                (org-agenda-todo-ignore-scheduled 'future)
-                (org-agenda-todo-ignore-deadlines 'future)
-                (org-agenda-sorting-strategy
-                 '(category-keep))))
-              ("w" "Waiting Tasks" todo "WAITING|SOMEDAY"
-               ((org-agenda-overriding-header "Waiting and Postponed tasks"))
-               (org-agenda-skip-function 'bh/skip-projects))
-              ("A" "Tasks to Archive" tags "-REFILE/"
-               ((org-agenda-overriding-header "Tasks to Archive")
-                (org-agenda-skip-function 'bh/skip-non-archivable-tasks))))))
 
 ; Tags with fast selection keys
 (setq org-tag-alist (quote ((:startgroup)
@@ -342,8 +252,6 @@ If the new path's directories does not exist, create them."
                             ("NOTE" . ?n)
                             ("CANCELLED" . ?C)
                             ("FLAGGED" . ??))))
-; For tag searches ignore tasks with scheduled and deadline dates
-(setq org-agenda-tags-todo-honor-ignore-options t)
 
 (defun start-journal-entry ()
   "Start a new journal entry."
@@ -354,19 +262,28 @@ If the new path's directories does not exist, create them."
   (org-insert-time-stamp (current-time) t)
   (open-line 2)
   (insert " "))
-
 (global-set-key (kbd "C-c j") 'start-journal-entry)
+
+(setq gabinete-journal-file "~/org/gabinete.org")
+(defun start-gabinete-journal-entry ()
+  "Start a new journal entry."
+  (interactive)
+  (find-file gabinete-journal-file)
+  (goto-char (point-min))
+  (org-insert-heading)
+  (org-insert-time-stamp (current-time) t)
+  (open-line 2)
+  (insert " "))
+(global-set-key (kbd "C-c M-g") 'start-gabinete-journal-entry)
 
 ;; Org-mode agenda
 (setq org-agenda-include-diary t)
-(setq org-agenda-include-all-todo t)
 
-(setq org-agenda-files (list "~/docs/org/todo.org" 
-                             "~/docs/org/habits.org"
-                             "~/docs/org/birthday.org"
+(setq org-agenda-files (list "~/org/todo.org" 
+                             "~/org/habits.org"
+                             "~/org/refile.org"
+                             "~/org/birthday.org"
                              ))
-;; Do not dim blocked tasks
-(setq org-agenda-dim-blocked-tasks nil)
 
 ;; Custom agenda command definitions
 
@@ -448,34 +365,52 @@ If the new path's directories does not exist, create them."
 ;;; erc
 
 (require 'erc)
+(require 'erc-match)
+
 (setq erc-server "irc.freenode.net"
       erc-port 6667
       erc-nick "kennym"
       erc-user-full-name "Kenny Meyer"
-      erc-email-userid "knny.myer AT gmail DOT com")
-(require 'erc-match)
-    (setq erc-keywords '("kennym"))
+      erc-email-userid "knny.myer")
+
+(setq erc-log-channels t
+      erc-log-channels-directory "~/.erc"
+      erc-log-insert-log-on-open nil
+      erc-max-buffer-size 10000
+      erc-log-p nil
+      erc-paranoid t
+      erc-auto-reconnect t)
+
+(setq erc-timestamp-only-if-changed-flag nil
+      erc-timestamp-format "%m%d.%T ")
+
+(setq erc-keywords '("kennym"))
+
 (setq erc-autojoin-channels-alist
-      '(("freenode.net" "#olpc-paraguay")))
-;(setq erc-hide-list '("JOIN" "PART" "QUIT"))
+      '(("freenode.net" "#olpc-paraguay" "#archlinux" "#sugar")
+        ("irc.gnome.org" "#gnome-shell")))
+(setq erc-hide-list '("JOIN" "PART" "QUIT"))
 
-;;;; erc - Use libnotify
+;; score up
+(setq erc-pals '("tch"))
 
-(defun clean-message (s)
-  (setq s (replace-regexp-in-string "'" "&apos;"
-  (replace-regexp-in-string "\"" "&quot;"
-  (replace-regexp-in-string "&" "&"
-  (replace-regexp-in-string "<" "&lt;"
-  (replace-regexp-in-string ">" "&gt;" s)))))))
+;; score down
+(setq erc-fools '())
+(setq erc-ignore-list '())
+(setq erc-ignore-reply-list '())
 
-(defun call-libnotify (matched-type nick msg)
-  (let* ((cmsg  (split-string (clean-message msg)))
-        (nick   (first (split-string nick "!")))
-        (msg    (mapconcat 'identity (rest cmsg) " ")))
-    (shell-command-to-string
-     (format "notify-send --hint=int:transient:1 '%s says:' '%s'" nick msg))))
+;;; ERC - GTK3 notification for Emacs 24
 
-(add-hook 'erc-text-matched-hook 'call-libnotify)
+(require 'notifications)
+(defun erc-global-notify (match-type nick message)
+  "Notify when a message is recieved."
+  (notifications-notify
+   :title nick
+   :body message
+   :app-icon "/usr/share/notify-osd/icons/gnome/scalable/status/notification-message-im.svg"
+   :urgency 'low))
+
+(add-hook 'erc-text-matched-hook 'erc-global-notify)
 
 ;;; full-ack
 (autoload 'ack-same "full-ack" nil t)
@@ -502,3 +437,76 @@ If the new path's directories does not exist, create them."
 
 (add-hook 'coffee-mode-hook
   '(lambda() (coffee-custom)))
+
+;(autoload 'po-mode "po-mode+"
+;  "Major mode for translators to edit PO files" t) ;; po mode
+
+  ;; load up Org-mode and Org-babel
+(require 'org-drill)
+
+(setq org-ditaa-jar-path "~/code/repos/org-mode/contrib/scripts/ditaa.jar")
+(setq org-plantuml-jar-path
+      (expand-file-name "~/code/repos/org-mode/contrib/scripts/plantuml.jar"))
+
+(add-hook 'org-babel-after-execute-hook 'org-display-inline-images 'append)
+(org-babel-do-load-languages
+ 'org-babel-load-languages
+ '((ditaa . t)
+   (plantuml . t)))
+
+; Do not prompt to confirm evaluation
+; This may be dangerous - make sure you understand the consequences
+; of setting this -- see the docstring for details
+(setq org-confirm-babel-evaluate nil)
+
+; PHP
+(autoload 'php-mode "php-mode" "Major mode for editing php code." t)
+(add-to-list 'auto-mode-alist '("\\.php$" . php-mode))
+(add-to-list 'auto-mode-alist '("\\.inc$" . php-mode))
+(setq php-mode-force-pear 1)
+
+;; Wanderlust
+(autoload 'wl "wl" "Wanderlust" t)
+(autoload 'wl-other-frame "wl" "Wanderlust on new frame." t)
+(autoload 'wl-draft "wl-draft" "Write draft with Wanderlust." t)
+
+;; IMAP
+(setq elmo-imap4-default-server "imap.gmail.com")
+(setq elmo-imap4-default-user "knny.myer@gmail.com") 
+(setq elmo-imap4-default-authenticate-type 'clear) 
+(setq elmo-imap4-default-port '993)
+(setq elmo-imap4-default-stream-type 'ssl)
+
+(setq elmo-imap4-use-modified-utf7 t) 
+
+;; SMTP
+(setq wl-smtp-connection-type 'starttls)
+(setq wl-smtp-posting-port 587)
+(setq wl-smtp-authenticate-type "plain")
+(setq wl-smtp-posting-user "mattofransen")
+(setq wl-smtp-posting-server "smtp.gmail.com")
+(setq wl-local-domain "gmail.com")
+
+(setq wl-default-folder "%inbox")
+(setq wl-default-spec "%")
+(setq wl-draft-folder "%[Gmail]/Drafts") ; Gmail IMAP
+(setq wl-trash-folder "%[Gmail]/Trash")
+
+(setq wl-folder-check-async t) 
+
+(setq elmo-imap4-use-modified-utf7 t)
+
+(autoload 'wl-user-agent-compose "wl-draft" nil t)
+(if (boundp 'mail-user-agent)
+    (setq mail-user-agent 'wl-user-agent))
+(if (fboundp 'define-mail-user-agent)
+    (define-mail-user-agent
+      'wl-user-agent
+      'wl-user-agent-compose
+      'wl-draft-send
+      'wl-draft-kill
+      'mail-send-hook))
+
+;(setq flyspell-issue-welcome-flag nil)
+;; fix flyspell problem
+
